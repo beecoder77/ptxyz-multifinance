@@ -1,0 +1,135 @@
+Project "PT XYZ Multifinance" {
+  database_type: 'PostgreSQL'
+  Note: 'Database schema for PT XYZ Multifinance loan management system'
+}
+
+Table customers {
+  id integer [pk, increment, note: 'Primary key']
+  nik varchar(16) [not null, unique, note: 'National ID number']
+  full_name varchar(100) [not null, note: 'Customer full name']
+  legal_name varchar(100) [not null, note: 'Legal name as in ID']
+  place_of_birth varchar(100) [not null, note: 'Place of birth']
+  date_of_birth date [not null, note: 'Date of birth']
+  salary decimal(15,2) [not null, note: 'Monthly salary']
+  ktp_photo varchar(255) [not null, note: 'KTP photo URL']
+  selfie_photo varchar(255) [not null, note: 'Selfie photo URL']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`, note: 'Record creation timestamp']
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`, note: 'Record update timestamp']
+  deleted_at timestamp [null, note: 'Soft delete timestamp']
+
+  indexes {
+    nik
+  }
+}
+
+Table credit_limits {
+  id integer [pk, increment, note: 'Primary key']
+  customer_id integer [not null, note: 'Reference to customers table']
+  tenor integer [not null, note: 'Loan tenure in months']
+  amount decimal(15,2) [not null, note: 'Credit limit amount']
+  used_amount decimal(15,2) [not null, default: 0, note: 'Used credit amount']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    customer_id
+    (customer_id, tenor) [unique]
+  }
+}
+
+Table transactions {
+  id integer [pk, increment, note: 'Primary key']
+  contract_number varchar(50) [not null, unique, note: 'Unique contract identifier']
+  customer_id integer [not null, note: 'Reference to customers table']
+  source varchar(20) [not null, note: 'Transaction source (e-commerce/website/dealer)']
+  status varchar(20) [not null, default: 'pending', note: 'Transaction status']
+  asset_name varchar(100) [not null, note: 'Name of financed asset']
+  otr_amount decimal(15,2) [not null, note: 'On The Road price']
+  admin_fee decimal(15,2) [not null, note: 'Administrative fee']
+  installment_amount decimal(15,2) [not null, note: 'Monthly installment amount']
+  interest_amount decimal(15,2) [not null, note: 'Total interest amount']
+  tenor integer [not null, note: 'Loan tenure in months']
+  version integer [not null, default: 1, note: 'Version for optimistic locking']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp [null]
+
+  indexes {
+    contract_number
+    customer_id
+  }
+}
+
+Table installments {
+  id integer [pk, increment, note: 'Primary key']
+  transaction_id integer [not null, note: 'Reference to transactions table']
+  due_date date [not null, note: 'Installment due date']
+  amount decimal(15,2) [not null, note: 'Installment amount']
+  status varchar(20) [not null, default: 'unpaid', note: 'Payment status']
+  version integer [not null, default: 1, note: 'Version for optimistic locking']
+  paid_at timestamp [null, note: 'Payment timestamp']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    transaction_id
+    due_date
+  }
+}
+
+// Define all relationships
+Ref: credit_limits.customer_id > customers.id
+Ref: transactions.customer_id > customers.id
+Ref: installments.transaction_id > transactions.id
+
+TableGroup Financing {
+  customers
+  credit_limits
+  transactions
+  installments
+}
+
+// Enums
+Enum transaction_source {
+  "e-commerce"
+  website
+  dealer
+}
+
+Enum transaction_status {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+Enum installment_status {
+  paid
+  unpaid
+  overdue
+}
+
+Enum tenor_months {
+  "1"
+  "2"
+  "3"
+  "4"
+}
+
+Table audit_logs {
+  id uuid [pk, note: 'Primary key']
+  entity_id uuid [not null, note: 'ID of the entity being audited']
+  entity_type varchar [not null, note: 'Type of entity (customers/transactions/installments)']
+  action varchar [not null, note: 'Action performed (CREATE/UPDATE/DELETE)']
+  old_data jsonb [null, note: 'Previous state of the entity']
+  new_data jsonb [null, note: 'New state of the entity']
+  actor_id varchar [not null, note: 'ID of user who performed the action']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    entity_id
+    entity_type
+    action
+    created_at
+  }
+} 

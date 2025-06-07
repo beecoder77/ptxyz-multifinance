@@ -1,0 +1,6 @@
+FROM migrate/migrate
+
+COPY migrations /migrations
+
+ENTRYPOINT ["migrate", "-path", "/migrations", "-database"]
+CMD ["postgres://xyz_user:xyz_password@postgres:5432/xyz_db?sslmode=disable", "up"] 

@@ -1,0 +1,52 @@
+server:
+  port: 8080
+  timeout: 30
+
+database:
+  host: postgres
+  port: 5432
+  user: xyz_user
+  password: xyz_password
+  name: xyz_db
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+redis:
+  addr: redis:6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: your-256-bit-secret
+  issuer: xyz-multifinance
+  expiry: 86400 # 24 hours in seconds
+
+rate_limit:
+  max_requests: 100
+  window: 60 # seconds
+
+logger:
+  level: info
+  encoding: json
+
+cors:
+  allowed_origins:
+    - http://localhost:3000
+    - https://xyz-multifinance.com
+  allowed_methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+  allowed_headers:
+    - Authorization
+    - Content-Type
+  max_age: 300 # seconds
+
+security:
+  bcrypt_cost: 12
+  min_password_length: 8
+  max_login_attempts: 5
+  lockout_duration: 900 # 15 minutes in seconds
+  encryption_key: "your-32-byte-encryption-key-here-123" # Must be 32 bytes 

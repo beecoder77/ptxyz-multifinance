@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "e5f3b0a0-0b0a-4b0a-8b0a-0b0a0b0a0b0a",
+		"name": "PT XYZ Multifinance API",
+		"description": "API documentation for PT XYZ Multifinance backend services",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Customer",
+			"description": "Customer management endpoints",
+			"item": [
+				{
+					"name": "Register Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nik\": \"1234567890123456\",\n    \"full_name\": \"John Doe\",\n    \"legal_name\": \"John Doe\",\n    \"place_of_birth\": \"Jakarta\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"salary\": 5000000,\n    \"ktp_photo\": \"https://example.com/ktp.jpg\",\n    \"selfie_photo\": \"https://example.com/selfie.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "customers"]
+						},
+						"description": "Register a new customer with personal information"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nik\": \"1234567890123456\",\n    \"full_name\": \"John Doe\",\n    \"legal_name\": \"John Doe\",\n    \"place_of_birth\": \"Jakarta\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"salary\": 5000000,\n    \"ktp_photo\": \"https://example.com/ktp.jpg\",\n    \"selfie_photo\": \"https://example.com/selfie.jpg\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/customers"
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"id\": 1,\n    \"nik\": \"1234567890123456\",\n    \"full_name\": \"John Doe\",\n    \"legal_name\": \"John Doe\",\n    \"place_of_birth\": \"Jakarta\",\n    \"date_of_birth\": \"1990-01-01T00:00:00Z\",\n    \"salary\": 5000000,\n    \"ktp_photo\": \"https://example.com/ktp.jpg\",\n    \"selfie_photo\": \"https://example.com/selfie.jpg\",\n    \"created_at\": \"2024-03-08T10:00:00Z\",\n    \"updated_at\": \"2024-03-08T10:00:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Customer Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "customers", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get customer profile by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Customer Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"full_name\": \"John Doe Updated\",\n    \"legal_name\": \"John Doe Updated\",\n    \"salary\": 6000000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "customers", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update customer profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Credit Limits",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/:id/credit-limits",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "customers", ":id", "credit-limits"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get customer's credit limits for different tenors"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction",
+			"description": "Transaction management endpoints",
+			"item": [
+				{
+					"name": "Create Transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_id\": 1,\n    \"source\": \"e-commerce\",\n    \"asset_name\": \"Smartphone XYZ\",\n    \"otr_amount\": 5000000,\n    \"admin_fee\": 100000,\n    \"installment_amount\": 1375000,\n    \"interest_amount\": 500000,\n    \"tenor\": 4\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions"]
+						},
+						"description": "Create a new transaction"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get transaction details by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction by Contract Number",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/contract/:number",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", "contract", ":number"],
+							"variable": [
+								{
+									"key": "number",
+									"value": "XYZ-1-1678276800"
+								}
+							]
+						},
+						"description": "Get transaction details by contract number"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Transaction Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/:id/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update transaction status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/customer/:customer_id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", "customer", ":customer_id"],
+							"query": [
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							],
+							"variable": [
+								{
+									"key": "customer_id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get list of customer's transactions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction Installments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/:id/installments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", ":id", "installments"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get list of transaction's installments"
+					},
+					"response": []
+				},
+				{
+					"name": "Pay Installment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/installments/:id/pay",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", "installments", ":id", "pay"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Pay an installment"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+} 
