@@ -3,6 +3,9 @@ package repository
 import (
 	"xyz-multifinance/internal/domain"
 
+	"errors"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -44,7 +47,30 @@ func (r *customerRepository) GetByNIK(nik string) (*domain.Customer, error) {
 
 // Update implements CustomerRepository.Update
 func (r *customerRepository) Update(customer *domain.Customer) error {
-	return r.db.Save(customer).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get current version using raw SQL
+		var current struct {
+			Version int
+		}
+		if err := tx.Raw(`SELECT version FROM "customers" WHERE "customers"."id" = ? ORDER BY "customers"."id" LIMIT ?`, customer.ID, 1).Scan(&current).Error; err != nil {
+			return err
+		}
+
+		// Check version
+		if current.Version != customer.Version {
+			return errors.New("concurrent modification detected")
+		}
+
+		// Increment version
+		customer.Version++
+
+		// Update customer
+		if err := tx.Save(customer).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 // Delete implements CustomerRepository.Delete
@@ -74,5 +100,38 @@ func (r *customerRepository) GetCreditLimits(customerID uint) ([]domain.CreditLi
 
 // UpdateCreditLimit implements CustomerRepository.UpdateCreditLimit
 func (r *customerRepository) UpdateCreditLimit(limit *domain.CreditLimit) error {
-	return r.db.Save(limit).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get current version using raw SQL
+		var current struct {
+			Version int
+		}
+		if err := tx.Raw(`SELECT version FROM "credit_limits" WHERE "credit_limits"."id" = ? ORDER BY "credit_limits"."id" LIMIT ?`, limit.ID, 1).Scan(&current).Error; err != nil {
+			return err
+		}
+
+		// Check version
+		if current.Version != limit.Version {
+			return errors.New("concurrent modification detected")
+		}
+
+		// Increment version
+		limit.Version++
+
+		// Update credit limit using raw SQL
+		result := tx.Exec(`UPDATE "credit_limits" SET "customer_id"=?,"tenor"=?,"amount"=?,"used_amount"=?,"version"=?,"created_at"=?,"updated_at"=?,"deleted_at"=? WHERE "id" = ?`,
+			limit.CustomerID, limit.Tenor, limit.Amount, limit.UsedAmount,
+			limit.Version, time.Time{}, time.Now(), nil,
+			limit.ID,
+		)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("optimistic lock error")
+		}
+
+		return nil
+	})
 }

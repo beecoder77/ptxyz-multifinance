@@ -23,15 +23,22 @@ build: ## Build the application
 ## Test:
 test: ## Run unit tests
 	@echo "Running unit tests..."
-	@go test -v -race -cover ./...
+	@go test -v -race -cover ./tests/unit/...
 
 test-integration: ## Run integration tests
 	@echo "Running integration tests..."
 	@go test -v -tags=integration ./tests/integration/...
 
+test-e2e: ## Run end-to-end tests
+	@echo "Running e2e tests..."
+	@go test -v -tags=e2e ./tests/e2e/...
+
+test-all: test test-integration test-e2e ## Run all tests
+	@echo "Running all tests..."
+
 test-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."
-	@go test -v -race -coverprofile=coverage.out ./...
+	@go test -v -race -coverprofile=coverage.out ./tests/...
 	@go tool cover -html=coverage.out -o coverage.html
 
 ## Database:

@@ -2,6 +2,8 @@ package repository
 
 import (
 	"errors"
+	"fmt"
+	"time"
 	"xyz-multifinance/internal/domain"
 
 	"gorm.io/gorm"
@@ -19,12 +21,38 @@ func NewTransactionRepository(db *gorm.DB) domain.TransactionRepository {
 }
 
 // Create implements TransactionRepository.Create
-func (r *transactionRepository) Create(tx *domain.Transaction) error {
+func (r *transactionRepository) Create(transaction *domain.Transaction) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// Create transaction
-		if err := tx.Create(&tx).Error; err != nil {
-			return err
+		// Set initial version
+		transaction.Version = 1
+
+		// Create transaction with specific column order using raw SQL
+		result := tx.Raw(`INSERT INTO "transactions" ("customer_id","contract_number","source","status","asset_name","otr_amount","admin_fee","installment_amount","interest_amount","tenor","version","created_at","updated_at","deleted_at") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING "id"`,
+			transaction.CustomerID, transaction.ContractNumber,
+			transaction.Source, transaction.Status, transaction.AssetName,
+			transaction.OTRAmount, transaction.AdminFee,
+			transaction.InstallmentAmount, transaction.InterestAmount,
+			transaction.Tenor, transaction.Version,
+			time.Now(), time.Now(), nil,
+		).Scan(&transaction.ID)
+
+		if result.Error != nil {
+			return result.Error
 		}
+
+		// Create installments with specific column order using raw SQL
+		for i := 1; i <= transaction.Tenor; i++ {
+			dueDate := time.Now().AddDate(0, i, 0)
+			result := tx.Raw(`INSERT INTO "installments" ("transaction_id","installment_number","amount","status","due_date","version","created_at","updated_at","deleted_at") VALUES (?,?,?,?,?,?,?,?,?) RETURNING "id"`,
+				transaction.ID, i, transaction.InstallmentAmount, "unpaid",
+				dueDate, 1, time.Now(), time.Now(), nil,
+			).Scan(new(uint))
+
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
 		return nil
 	})
 }
@@ -42,11 +70,35 @@ func (r *transactionRepository) GetByID(id uint) (*domain.Transaction, error) {
 // GetByContractNumber implements TransactionRepository.GetByContractNumber
 func (r *transactionRepository) GetByContractNumber(contractNumber string) (*domain.Transaction, error) {
 	var transaction domain.Transaction
-	err := r.db.Preload("Customer").Preload("Installments").
-		Where("contract_number = ?", contractNumber).First(&transaction).Error
-	if err != nil {
-		return nil, err
+
+	// Get transaction
+	query := `SELECT * FROM "transactions" WHERE "contract_number" = ? AND "deleted_at" IS NULL`
+	if err := r.db.Raw(query, contractNumber).Scan(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to get transaction: %w", err)
 	}
+
+	// Get customer
+	var customer domain.Customer
+	customerQuery := `SELECT * FROM "customers" WHERE "id" = ? AND "deleted_at" IS NULL`
+	if err := r.db.Raw(customerQuery, transaction.CustomerID).Scan(&customer).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to get customer: %w", err)
+	}
+	transaction.Customer = &customer
+
+	// Get installments
+	var installments []domain.Installment
+	installmentQuery := `SELECT * FROM "installments" WHERE "transaction_id" = ? AND "deleted_at" IS NULL ORDER BY "installment_number" ASC`
+	if err := r.db.Raw(installmentQuery, transaction.ID).Scan(&installments).Error; err != nil {
+		return nil, fmt.Errorf("failed to get installments: %w", err)
+	}
+	transaction.Installments = installments
+
 	return &transaction, nil
 }
 
@@ -108,24 +160,29 @@ func (r *transactionRepository) GetInstallments(transactionID uint) ([]domain.In
 
 // UpdateInstallment implements TransactionRepository.UpdateInstallment
 func (r *transactionRepository) UpdateInstallment(installment *domain.Installment) error {
-	return r.db.Transaction(func(db *gorm.DB) error {
-		// Get current version
-		var current domain.Installment
-		if err := db.Select("version").First(&current, installment.ID).Error; err != nil {
-			return err
-		}
-
-		// Check version
-		if current.Version != installment.Version {
-			return errors.New("concurrent modification detected")
-		}
-
+	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Increment version
 		installment.Version++
 
-		// Update installment
-		if err := db.Save(installment).Error; err != nil {
-			return err
+		// Update installment using raw SQL
+		result := tx.Exec(`UPDATE "installments" SET "transaction_id"=?,"installment_number"=?,"amount"=?,"status"=?,"due_date"=?,"updated_at"=?,"version"=? WHERE "id"=? AND "version"=?`,
+			installment.TransactionID,
+			installment.InstallmentNumber,
+			installment.Amount,
+			installment.Status,
+			installment.DueDate,
+			time.Now(),
+			installment.Version,
+			installment.ID,
+			installment.Version-1,
+		)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("optimistic lock error")
 		}
 
 		return nil

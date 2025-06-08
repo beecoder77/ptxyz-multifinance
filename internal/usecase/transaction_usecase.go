@@ -7,21 +7,19 @@ import (
 	"time"
 	"xyz-multifinance/internal/domain"
 	"xyz-multifinance/internal/pkg/redis"
-
-	redisClient "github.com/redis/go-redis/v9"
 )
 
 type transactionUseCase struct {
 	transactionRepo domain.TransactionRepository
 	customerUseCase domain.CustomerUseCase
-	redisClient     *redisClient.Client
+	redisClient     redis.RedisClient
 }
 
 // NewTransactionUseCase creates a new instance of TransactionUseCase
 func NewTransactionUseCase(
 	transactionRepo domain.TransactionRepository,
 	customerUseCase domain.CustomerUseCase,
-	redisClient *redisClient.Client,
+	redisClient redis.RedisClient,
 ) domain.TransactionUseCase {
 	return &transactionUseCase{
 		transactionRepo: transactionRepo,
@@ -32,16 +30,6 @@ func NewTransactionUseCase(
 
 // Create implements TransactionUseCase.Create
 func (uc *transactionUseCase) Create(tx *domain.Transaction) error {
-	// Create distributed lock
-	lock := redis.NewDistributedLock(uc.redisClient, fmt.Sprintf("customer:%d", tx.CustomerID), 30*time.Second)
-
-	// Try to acquire lock with timeout
-	ctx := context.Background()
-	if err := lock.TryLock(ctx, 5*time.Second); err != nil {
-		return fmt.Errorf("failed to acquire lock: %v", err)
-	}
-	defer lock.Unlock(ctx)
-
 	// Check credit limit
 	totalAmount := tx.OTRAmount + tx.AdminFee
 	hasLimit, err := uc.customerUseCase.CheckCreditLimit(tx.CustomerID, totalAmount, tx.Tenor)

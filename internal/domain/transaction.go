@@ -48,15 +48,16 @@ type Transaction struct {
 
 // Installment represents the installment entity
 type Installment struct {
-	ID            uint       `json:"id" gorm:"primaryKey"`
-	TransactionID uint       `json:"transaction_id" gorm:"not null"`
-	DueDate       time.Time  `json:"due_date" gorm:"not null"`
-	Amount        float64    `json:"amount" gorm:"not null"`
-	Status        string     `json:"status" gorm:"not null;default:'unpaid'"` // paid, unpaid, overdue
-	Version       int        `json:"version" gorm:"not null;default:1"`       // For optimistic locking
-	PaidAt        *time.Time `json:"paid_at,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                uint       `json:"id" gorm:"primaryKey"`
+	TransactionID     uint       `json:"transaction_id" gorm:"not null"`
+	InstallmentNumber int        `json:"installment_number" gorm:"not null"`
+	DueDate           time.Time  `json:"due_date" gorm:"not null"`
+	Amount            float64    `json:"amount" gorm:"not null"`
+	Status            string     `json:"status" gorm:"not null;default:'unpaid'"` // paid, unpaid, overdue
+	Version           int        `json:"version" gorm:"not null;default:1"`       // For optimistic locking
+	PaidAt            *time.Time `json:"paid_at,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }
 
 // TransactionRepository represents the transaction repository contract

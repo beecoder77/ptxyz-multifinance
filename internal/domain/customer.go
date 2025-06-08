@@ -15,6 +15,7 @@ type Customer struct {
 	Salary       float64    `json:"salary" gorm:"not null"`
 	KTPPhoto     string     `json:"ktp_photo" gorm:"not null"`
 	SelfiePhoto  string     `json:"selfie_photo" gorm:"not null"`
+	Version      int        `json:"version" gorm:"not null;default:1"` // For optimistic locking
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	DeletedAt    *time.Time `json:"deleted_at,omitempty" gorm:"index"`
@@ -31,6 +32,7 @@ type CreditLimit struct {
 	Tenor      int       `json:"tenor" gorm:"not null"` // in months
 	Amount     float64   `json:"amount" gorm:"not null"`
 	UsedAmount float64   `json:"used_amount" gorm:"not null;default:0"`
+	Version    int       `json:"version" gorm:"not null;default:1"` // For optimistic locking
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
